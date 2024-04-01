@@ -1,0 +1,4 @@
+# Config and other
+*.ini
+auth
+.cache

@@ -1,0 +1,5 @@
+Flask==2.2.3
+waitress==2.1.2
+sqlparse==0.4.4
+spotipy==2.23.0
+Flask-WTF==1.1.1
