@@ -7,6 +7,7 @@ import configparser
 import flask
 import spotipy
 import sqlparse
+import waitress
 
 # SETUP
 config = configparser.ConfigParser()
@@ -62,6 +63,8 @@ def is_authorized(token : str) -> bool:
         return False
 
 ## MISC
+PORT = int(config['NETWORK']['PORT'])
+DEV = int(config['NETWORK']['DEV'])
 
 class Opener():
     def __init__(self):
@@ -228,4 +231,8 @@ def get_top_albums() -> flask.Response:
 
     return flask.jsonify(response)
 
-app.run()
+if __name__ == "__main__":
+    if DEV:
+        app.run(port=PORT)
+    else:
+        waitress.serve(app, host='0.0.0.0', port=PORT)
