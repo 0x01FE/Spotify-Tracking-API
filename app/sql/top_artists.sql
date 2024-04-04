@@ -2,14 +2,17 @@
 SELECT
     artist_name,
     sum(time),
-    spotify_id
+    spotify_id,
+    artist_id,
+    icon_url
 FROM
     (SELECT
         artists.name artist_name,
 		artists.id artist_id,
         songs.name song_name,
         SUM("listen-events".time) time,
-        artists.spotify_id spotify_id
+        artists.spotify_id spotify_id,
+        artists.icon_url icon_url
     FROM
         "listen-events"
     INNER JOIN songs ON "listen-events".song=songs.id

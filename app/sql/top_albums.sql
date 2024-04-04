@@ -1,10 +1,11 @@
 -- Top Albums
 SELECT
 	artist_name,
-	artist_id,
+	album_id,
 	album_name,
 	SUM(time) time,
-	sp_id
+	sp_id,
+	cover_art_url
 FROM
 	(SELECT
 		artists.name artist_name,
@@ -13,7 +14,8 @@ FROM
 		songs.name song_name,
 		albums.spotify_id sp_id,
 		SUM("listen-events".time) / COUNT(DISTINCT artists.id) time,
-		albums.id album_id
+		albums.id album_id,
+		albums.cover_art_url cover_art_url
 	FROM
 		"listen-events"
 	INNER JOIN songs ON "listen-events".song=songs.id

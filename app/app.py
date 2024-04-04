@@ -1,14 +1,21 @@
 import os
+import sys
 import sqlite3
+import logging
 import configparser
 
 import flask
-import sqlparse
 import spotipy
+import sqlparse
 
 # SETUP
 config = configparser.ConfigParser()
 config.read("config.ini")
+
+## LOGGING
+FORMAT = "%(asctime)s : %(levelname)s - %(message)s"
+logging.basicConfig(filename="../music-stats-api.log", encoding="utf-8", level=logging.INFO, format=FORMAT)
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 ## SPOTIPY
 CLIENT_ID = config["SPOTIFY"]["CLIENT_ID"]
@@ -67,6 +74,8 @@ class Opener():
         self.con.commit()
         self.con.close()
 
+logging.info(f"<{'-'*10}> APP STARTING <{'-'*10}>")
+logging.info(f"Database Path: {DATABASE_PATH}")
 app = flask.Flask(__name__)
 
 
@@ -141,7 +150,6 @@ def get_top_artists() -> flask.Response:
         cur.execute(queries["top_artists"][dated], args)
 
         results = cur.fetchall()
-    print(results)
 
     response = { "top" : [] }
     for artist in results:
@@ -149,13 +157,21 @@ def get_top_artists() -> flask.Response:
         spotify_id: str = artist[2]
         listen_time: int = int(artist[1])
 
-        image_url = get_spotify_artist_image_url(spotify_id)
+        # Check for album art in DB
+        artist_icon_url: str | None = artist[4]
+
+        if not artist_icon_url:
+            artist_id: int = artist[3]
+            artist_icon_url = get_spotify_artist_image_url(spotify_id)
+
+            with Opener() as (con, cur):
+                cur.execute(queries["update_artist_icon_url"], [artist_icon_url, artist_id])
 
         response["top"].append({
             "artist_name" : artist_name,
             "spotify_id" : spotify_id,
             "listen_time" : listen_time,
-            "artist_icon" : image_url
+            "artist_icon" : artist_icon_url
         })
 
     return flask.jsonify(response)
@@ -181,23 +197,33 @@ def get_top_albums() -> flask.Response:
         cur.execute(queries["top_albums"][dated], args)
 
         results = cur.fetchall()
-    print(results)
+    logging.debug(results)
 
     response = { "top" : [] }
     for album in results:
         artist_name: str = album[0].replace('-', ' ').title()
         album_name: str = album[2]
         spotify_id: str = album[4]
-        listen_time: int = int(album[3])
+        listen_time = int(album[3])
 
-        image_url = get_spotify_album_image_url(spotify_id)
+         # Check for album art in DB
+        album_cover_url: str | None = album[5]
+
+        if not album_cover_url:
+            logging.debug(f'Fetching album art for {album_name}')
+            album_id: int = album[1]
+            album_cover_url = get_spotify_album_image_url(spotify_id)
+
+
+            with Opener() as (con, cur):
+                cur.execute(queries["update_album_art"], [album_cover_url, album_id])
 
         response["top"].append({
             "artist_name" : artist_name,
             "album_name" : album_name,
             "spotify_id" : spotify_id,
             "listen_time" : listen_time,
-            "album_cover" : image_url
+            "album_cover" : album_cover_url
         })
 
     return flask.jsonify(response)
